@@ -1,11 +1,14 @@
-import './App.css'
-import ProductCard from './components/ProductCard'; 
+import './App.css' 
 import Header from "./components/Header";
-import Hero from './components/Hero';
 import Footer from './components/Footer';
-import CartItem from './components/CartItem';
-import { useState } from 'react';
-
+import { useEffect, useState } from 'react';
+import { BrowserRouter, Routes, Route } from 'react-router-dom';
+import HomePage from './pages/HomePage';
+import ProductsPage from './pages/ProductPage';
+import CartPage from './pages/CartPage';
+import ProductDetails from "./pages/ProductDetails";
+import AboutPage from './pages/AboutPage';
+import FAQPage from './pages/FAQPage';
 
 //each card will be listed out vertically, with image, name, price, and description.
 function App() {
@@ -56,8 +59,27 @@ function App() {
     }
   ];
 
-  //store items currently in cart array
-  const [cart, setCartcount] = useState([]);
+  //store items currently in cart array, with local storage
+  const [cart, setCartcount] = useState(() => {
+    try {
+      const savedCart = localStorage.getItem("cart");
+      return savedCart ? JSON.parse(savedCart) : [];
+    } catch {
+      console.warn("Could not load cart from localStorage");
+      return [];
+    }
+  });
+
+  //allows data to be saved whenever post state changes, makes sure there are no errors
+  useEffect(() => {
+    try {
+      localStorage.setItem("cart", JSON.stringify(cart));
+    } catch (error) {
+      console.warn("Could not save cart to localStorage", error);
+    }
+  }, [cart]);
+
+
   //adds item to cart
   function addToCart(product) {
     setCartcount([...cart, product]);
@@ -69,47 +91,24 @@ function App() {
     setCartcount(cart.filter((product) => product.id !== productId));
   }
 
-
-  //calculate total price of each item in cart
-  const cartTotal = cart.reduce((total, product) => {
-    return total + product.price;
-  }, 0);
-
+  //routes will lead to each function, links will be in the header. Link to product details will be on products page on product card
   return (
-    <div className="app">
-      <Header storeName="TechShop" cartCount={cart.length}/>
-      <Hero title="High Quality Tech Products" subtitle="Search for Tech Products Perfect for your Setup." calltoaction="Browse All" />
+  <BrowserRouter>
+      <div className="app">
+        <Header storeName="TechShop" cartCount={cart.length}/>
 
-      <h1>Great Deals</h1> 
-      
-      {/* makes a prodcut card for each product in array*/}
-      {products.map((product) => (
-        <ProductCard 
-          key={product.id}
-          product={product}
-          onAddToCart={addToCart}
-          /> 
-      ))}
+        <Routes>
+          <Route path="/" element={<HomePage />}/>
+          <Route path="/products" element={<ProductsPage products={products} addToCart={addToCart}/>}/>
+          <Route path="/cart" element={<CartPage products={cart} removeFromCart={removeFromCart}/>}/>
+          <Route path="/products/:id" element={<ProductDetails products={products}/>}/>
+          <Route path="/about" element={<AboutPage/>}/>
+          <Route path="/faq" element={<FAQPage/>}/>
+        </Routes>
 
-
-      {/* creates cart section that will tell user cart is empty if 0 items are in the cart, also calculates price and round 2 places */}
-      <section className="cart">
-        <h2>Shopping Cart</h2>
-
-        {cart.length === 0 ? (
-          <p>Cart is Empty</p>
-        ) : (
-          cart.map((product) => (
-          <CartItem key={product.id} product={product} onRemove={removeFromCart}/>
-          ))
-        )}
-
-        <h3>Total: ${cartTotal.toFixed(2)}</h3>
-
-      </section>
-      <Footer shopName="TechShop" email="test@test.test" phone="123-456-7890" address="1234 Test Lane" />
-
-    </div>
+        <Footer shopName="TechShop" email="test@test.test" phone="123-456-7890" address="1234 Test Lane"/>
+      </div>
+    </BrowserRouter>
   );
 }
 
